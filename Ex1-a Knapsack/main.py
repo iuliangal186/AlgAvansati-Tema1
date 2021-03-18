@@ -16,8 +16,11 @@ def Knapsack(n, k, A, B):
 
     return m[n][k]
 
-n = 3
-k = 50
-A = [60, 100, 120]
-B = [10, 20, 30]
+n = int(input("Enter number of objects: "))
+k = int(input("Enter weigth of knapsack: "))
+
+A = list(map(int,input("\nEnter the costs : ").strip().split()))[:n]
+
+B = list(map(int,input("\nEnter the weigths : ").strip().split()))[:n]
+
 print(Knapsack(n, k, A, B))
