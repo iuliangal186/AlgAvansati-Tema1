@@ -1,3 +1,4 @@
+# Knapsack 1/0 cu PD (cu values = weigths)
 def Knapsack(n, k, A, B):
     if n == 0 or k == 0:
         return 0
@@ -19,8 +20,6 @@ def Knapsack(n, k, A, B):
 n = int(input("Enter number of objects: "))
 k = int(input("Enter weigth of knapsack: "))
 
-A = list(map(int,input("\nEnter the costs : ").strip().split()))[:n]
+W = list(map(int,input("\nEnter the weigths : ").strip().split()))[:n]
 
-B = list(map(int,input("\nEnter the weigths : ").strip().split()))[:n]
-
-print(Knapsack(n, k, A, B))
+print(Knapsack(n, k, W, W))
