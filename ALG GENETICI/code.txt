@@ -1,0 +1,293 @@
+import random
+import math
+#Citire din fisier
+f = open("read.txt", 'r')
+
+n = int(f.readline())
+
+interval = f.readline()
+intv = interval.split()
+inter = list(map(int, intv))
+
+par = f.readline()
+param = par.split()
+parametri = list(map(int, param))
+
+precizie = int(f.readline())
+
+probabilitate_recombinare = float(f.readline())
+
+probabilitate_mutatie = float(f.readline())
+
+nr_etape = int(f.readline())
+
+#desecretizarea intervalului
+desecretizare = (inter[1] - inter[0]) * pow(10, precizie)
+#lungimea cromozomului
+lungime = round(math.log(desecretizare, 2))
+
+#generarea de cromozom
+def rand_chrom(p):
+    x = ""
+    for i in range(p):
+        y = str(random.randint(0, 1))
+        x += y
+    return x
+
+########## Populatia initiala ##########
+lista_fitness = [0]
+lista_x = [0]
+cromozomi = [0]
+print("Populatia initiala: ")
+for i in range(1, n + 1):
+    y = rand_chrom(lungime) #cromozomul
+    x = int(y, 2)
+    x = round(((inter[1] - inter[0])/(pow(2, lungime) - 1)) * x + inter[0], precizie) #x ul cromozomului
+    f = parametri[0] * x * x + parametri[1] * x + parametri[2] #functia de fitness
+    cromozomi.append(y)
+    lista_x.append(x)
+    lista_fitness.append(f)
+    print(i , ": ", y, "x= ", x, "f= ", f)
+
+########## Probabilitati selectie #########
+print("\n")
+print("Probabilitati selectie: ")
+suma_fitness = 0.0
+suma_fitness_list = [0]
+for i in range(1, len(lista_fitness)):
+    suma_fitness += lista_fitness[i] #am insumat toate valorile din lista de fitness
+
+for i in range(1, len(lista_fitness)):
+    print("cromozom ", i, "probabilitate ", lista_fitness[i]/suma_fitness)
+    suma_fitness_list.append(lista_fitness[i]/suma_fitness) #am impartit fiecare valoare la suma pentru a rezulta probabilitatea
+
+######## Intervale probabilitatile selectie ######
+print("\n")
+print("Intervale probabilitati selectie: ")
+intervale = []
+s = 0.0
+for i in range(1, len(suma_fitness_list)):
+    intervale.append(s)
+    s += suma_fitness_list[i]
+intervale.append(1.0) #am realizat o lista de la 0.0 la 1.0 semnificand intervalele de probabilitate
+print(intervale)
+
+####### Procesul de selectie #######
+def cautare_binara(array, x):
+    st = 0
+    dr = len(array)
+    mid = 0
+    while st <= dr:
+        mid = (st + dr) // 2
+        if array[mid] < x:
+            st = mid + 1
+        elif array[mid] > x:
+            dr = mid - 1
+
+    return mid + 1
+
+cromozomi_selectati = []
+print("\n")
+print("Selectie cromozomi")
+for i in range(1, n + 1):
+    u = random.uniform(0, 1)
+    q = cautare_binara(intervale, u) #am generat u intre 1 si 0 si cu ajutorul cautarii binare l-am cautat in lista de intervale
+    if q == n + 1:
+        q -= 1
+    cromozomi_selectati.append(q)
+    print("u= ", u, "selectam cromozomul", q)
+
+
+####### Dupa selectie ######
+print("\n")
+print("Dupa selectie: ")
+populatie1_cromozomi = [0]
+populatie1_x = [0]
+populatie1_fitness = [0]
+for i in range(0, n):
+    populatie1_cromozomi.append(cromozomi[cromozomi_selectati[i]])
+    populatie1_x.append(lista_x[cromozomi_selectati[i]])
+    populatie1_fitness.append(lista_fitness[cromozomi_selectati[i]])
+    print(i + 1, ": ", cromozomi[cromozomi_selectati[i]], " ", "x= ", lista_x[cromozomi_selectati[i]], " f= ", lista_fitness[cromozomi_selectati[i]])
+    #am afisat cromozomii selectati si am creat noua populatie
+
+###### Probabilitatea de recombinare 0.25 ######
+print('\n')
+print("Probabilitatea de incrucisare 0.25")
+cromozomi_recombinare = []
+for i in range(1, n + 1):
+    u = random.uniform(0, 1)
+    if u < probabilitate_recombinare:
+        cromozomi_recombinare.append(i)
+        print(i, ": ", populatie1_cromozomi[i], "u= ", u, "<", 0.25)
+    else:
+        print(i, ": ", populatie1_cromozomi[i], "u= ", u)
+    #am selectat random cromozomii in functie de probabilitatea data in input
+
+if len(cromozomi_recombinare) % 2 == 1:
+    del cromozomi_recombinare[-1]
+
+random.shuffle(cromozomi_recombinare)
+
+#functia de crossover cu o taietura
+def crossover(x1, x2):
+    x1 = list(x1)
+    x2 = list(x2)
+
+    k = random.randint(0,lungime)
+    #print("punct ", k)
+    for i in range(0, k):
+        x1[i], x2[i] = x2[i], x1[i]
+
+    x1 = ''.join(x1)
+    x2 = ''.join(x2)
+
+    return x1, x2
+
+for i in range(0, len(cromozomi_recombinare), 2):
+    print("Recombinare dintre cromozomul", cromozomi_recombinare[i], "cu cromozomul", cromozomi_recombinare[i + 1], ": ")
+
+    a = populatie1_cromozomi[cromozomi_recombinare[i]]
+    b = populatie1_cromozomi[cromozomi_recombinare[i + 1]]
+    print(a, b, end=" ")
+    a, b = crossover(a, b)
+    print("Rezultat", a, b)
+    print("\n")
+    populatie1_cromozomi[cromozomi_recombinare[i]] = a
+    populatie1_cromozomi[cromozomi_recombinare[i + 1]] = b
+
+    c = int(a, 2)
+
+    populatie1_fitness[cromozomi_recombinare[i]], populatie1_fitness[cromozomi_recombinare[i + 1]] = populatie1_fitness[cromozomi_recombinare[i + 1]], populatie1_fitness[cromozomi_recombinare[i]]
+
+    populatie1_x[cromozomi_recombinare[i]], populatie1_x[cromozomi_recombinare[i + 1]] = populatie1_x[cromozomi_recombinare[i + 1]], populatie1_x[cromozomi_recombinare[i]]
+    #am aplicat functia de crossover si am interschimbat datele intre cei 2 cromozomi care au participat la incrucisare
+    #am afisat noua populatie dupa recombinare
+###### Dupa recombinare ######
+print("Dupa recombinare")
+for i in range(1, n + 1):
+    print(i, ":", populatie1_cromozomi[i], " ", "x= ", populatie1_x[i], " ", "f= ",populatie1_fitness[i])
+
+###### Mutatia - v2###### pentru v1 aparea o mutatie la aproximativ 20 rulari
+print("Probabilitate de mutatie pentru fiecare gena", probabilitate_mutatie)
+print("Au fost modificati cromozomii: ")
+for i in range(1, n + 1):
+    for j in range(1, lungime + 1):
+        u = random.uniform(0, 1)
+        if u < probabilitate_mutatie:
+            p = round(random.uniform(0, lungime - 1))
+            copie = list(populatie1_cromozomi[i])
+            if copie[p] == 0:
+                copie[p] = 1
+            else:
+                copie[p] = 0
+            listToStr = ''.join([str(elem) for elem in copie])
+            populatie1_cromozomi[i] = listToStr
+            print(i)
+            x = int(listToStr, 2)
+            x = round(((inter[1] - inter[0]) / (pow(2, lungime) - 1)) * x + inter[0], precizie)
+            f = parametri[0] * x * x + parametri[1] * x + parametri[2]
+            populatie1_fitness[i] = f
+            populatie1_x[i] = x
+            #cu ajutorul probabilitatii de mutatie am selectat random anumiti cromozomi
+            #care au suferit mutatie in structura lor cat si in x si functia de fitness aferenta
+
+print("\n")
+print("Dupa mutatie")
+for i in range(1, n + 1):
+    print(i, ":", populatie1_cromozomi[i], " ", "x= ", populatie1_x[i], " ", "f= ", populatie1_fitness[i])
+
+
+###### Evolutia maximului ######
+print("\n")
+print("Evolutia maximului + valoarea medie a performantei: ")
+nr_etape -= 1
+#am repetat acelasi algoritm de cate ori ni se cere in input, generatia urmatoare trecand in generatia actuala
+while(nr_etape):
+    print(max(populatie1_fitness), " ", sum(populatie1_fitness) / n)
+
+    nr_etape -= 1
+
+    lista_fitness = [0]
+    lista_x = [0]
+    cromozomi = [0]
+
+    for i in range(1, n + 1):
+        lista_x.append(populatie1_x[i])
+        lista_fitness.append(populatie1_fitness[i])
+        cromozomi.append(populatie1_cromozomi[i])
+
+    suma_fitness = 0.0
+    suma_fitness_list = [0]
+    for i in range(1, len(lista_fitness)):
+        suma_fitness += lista_fitness[i]
+
+    for i in range(1, len(lista_fitness)):
+        suma_fitness_list.append(lista_fitness[i] / suma_fitness)
+
+    intervale = []
+    s = 0.0
+    for i in range(1, len(suma_fitness_list)):
+        intervale.append(s)
+        s += suma_fitness_list[i]
+    intervale.append(1.0)
+
+    cromozomi_selectati = []
+    for i in range(1, n + 1):
+        u = random.uniform(0, 1)
+        q = cautare_binara(intervale, u)
+        if q == n + 1:
+            q -= 1
+        cromozomi_selectati.append(q)
+
+    populatie1_cromozomi = [0]
+    populatie1_x = [0]
+    populatie1_fitness = [0]
+
+    for i in range(0, len(cromozomi_selectati)):
+        populatie1_cromozomi.append(cromozomi[cromozomi_selectati[i]])
+        populatie1_x.append(lista_x[cromozomi_selectati[i]])
+        populatie1_fitness.append(lista_fitness[cromozomi_selectati[i]])
+
+    cromozomi_recombinare = []
+    for i in range(1, n + 1):
+        u = random.uniform(0, 1)
+        if u < probabilitate_recombinare:
+            cromozomi_recombinare.append(i)
+
+    if len(cromozomi_recombinare) % 2 == 1:
+        del cromozomi_recombinare[-1]
+
+    random.shuffle(cromozomi_recombinare)
+
+    for i in range(0, len(cromozomi_recombinare), 2):
+        a = populatie1_cromozomi[cromozomi_recombinare[i]]
+        b = populatie1_cromozomi[cromozomi_recombinare[i + 1]]
+        a, b = crossover(a, b)
+        populatie1_cromozomi[cromozomi_recombinare[i]] = a
+        populatie1_cromozomi[cromozomi_recombinare[i + 1]] = b
+
+        populatie1_fitness[cromozomi_recombinare[i]], populatie1_fitness[cromozomi_recombinare[i + 1]] = populatie1_fitness[cromozomi_recombinare[i + 1]], populatie1_fitness[cromozomi_recombinare[i]]
+
+        populatie1_x[cromozomi_recombinare[i]], populatie1_x[cromozomi_recombinare[i + 1]] = populatie1_x[cromozomi_recombinare[i + 1]], populatie1_x[cromozomi_recombinare[i]]
+
+
+    for i in range(1, n + 1):
+        for j in range(1, lungime + 1):
+            u = random.uniform(0, 1)
+            if u < probabilitate_mutatie:
+                p = round(random.uniform(0, lungime - 1))
+                copie = list(populatie1_cromozomi[i])
+                if copie[p] == 0:
+                    copie[p] = 1
+                else:
+                    copie[p] = 0
+                listToStr = ''.join([str(elem) for elem in copie])
+                populatie1_cromozomi[i] = listToStr
+                x = int(listToStr, 2)
+                x = round(((inter[1] - inter[0])/(pow(2, lungime) - 1)) * x + inter[0], precizie)
+                f = parametri[0] * x * x + parametri[1] * x + parametri[2]
+                populatie1_fitness[i] = f
+                populatie1_x[i] = x
+
+
